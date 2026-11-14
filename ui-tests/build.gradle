@@ -1,0 +1,10 @@
+dependencies {
+    testImplementation 'com.codeborne:selenide:7.19.1'
+    testImplementation 'io.qameta.allure:allure-selenide:2.33.0'
+}
+
+tasks.named('test') {
+    useJUnitPlatform {
+        includeTags 'ui'
+    }
+}

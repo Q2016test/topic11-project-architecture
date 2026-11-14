@@ -1,0 +1,51 @@
+{
+  "startingProduct": {"name": "Стартовый товар", "price": 25.50},
+  "ui": {
+    "purchaseQuantity": 3,
+    "orderLimit": 300,
+    "startingCartQuantity": 2,
+    "cartProducts": [
+      {"product": {"name": "Чашка", "price": 70.25}, "quantity": 1},
+      {"product": {"name": "Стакан", "price": 20}, "quantity": 3}
+    ],
+    "createdProduct": {"name": "Новый товар", "price": 55.50},
+    "editedProduct": {"name": "Обновлённый товар", "price": 90.75}
+  },
+  "api": {
+    "firstPage": 0,
+    "pageSize": 10,
+    "lookupPageSize": 1000,
+    "missingId": -1,
+    "paginationProductCount": 3,
+    "paginationBasePrice": 1.5,
+    "paginationPriceStep": 1,
+    "paginationCases": [
+      {"page": 0, "size": 2, "expectedCount": 2},
+      {"page": 1, "size": 2, "expectedCount": 1},
+      {"page": 2, "size": 2, "expectedCount": 0}
+    ],
+    "prices": {
+      "zero": 0,
+      "initial": 10,
+      "duplicate": 20,
+      "missing": 15,
+      "get": 42.5,
+      "updated": 35.25,
+      "listRestAssured": 12.5,
+      "listAssertJ": 23.75
+    },
+    "invalidProducts": [
+      {"body": {"name": "", "price": 1}, "field": "name"},
+      {"body": {"name": "   ", "price": 1}, "field": "name"},
+      {"body": {"price": 1}, "field": "name"},
+      {"body": {"name": null, "price": 1}, "field": "name"},
+      {"body": {"name": "Невалидная цена", "price": -1}, "field": "price"}
+    ],
+    "authCases": [
+      {"method": "GET", "pathKey": "api.path.item", "hasBody": false},
+      {"method": "POST", "pathKey": "api.path.add", "hasBody": true},
+      {"method": "PATCH", "pathKey": "api.path.item", "hasBody": true},
+      {"method": "DELETE", "pathKey": "api.path.item", "hasBody": false}
+    ]
+  }
+}

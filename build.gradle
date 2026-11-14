@@ -1,0 +1,134 @@
+plugins {
+    id 'base'
+    id 'io.qameta.allure-aggregate-report' version '3.0.2'
+    id 'io.qameta.allure-adapter' version '3.0.2' apply false
+}
+
+allprojects {
+    group = 'ru.homework'
+    version = '1.0.0'
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java-library'
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.compilerArgs += '-parameters'
+    }
+}
+
+configure([project(':api-tests'), project(':ui-tests')]) {
+    apply plugin: 'io.qameta.allure-adapter'
+    dependencies {
+        testImplementation project(':common')
+        testImplementation platform('org.junit:junit-bom:5.13.4')
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testImplementation 'io.qameta.allure:allure-junit5:2.33.0'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+    allure {
+        adapter {
+            allureJavaVersion = '2.33.0'
+            aspectjVersion = '1.9.25.1'
+            aspectjWeaver = true
+        }
+    }
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+        systemProperty 'file.encoding', 'UTF-8'
+        if (rootProject.hasProperty('config')) {
+            systemProperty 'test.config', rootProject.file(rootProject.property('config')).absolutePath
+        }
+        if (rootProject.hasProperty('chromeDriver')) {
+            systemProperty 'webdriver.chrome.driver', rootProject.property('chromeDriver')
+        }
+        if (rootProject.hasProperty('socketDir')) {
+            systemProperty 'jdk.net.unixdomain.tmpdir', rootProject.property('socketDir')
+        }
+        maxParallelForks = 1
+        testLogging {
+            events 'passed', 'failed', 'skipped'
+            exceptionFormat = 'full'
+            showStandardStreams = true
+        }
+        outputs.upToDateWhen { false }
+    }
+    tasks.register('smokeTest', Test) {
+        group = 'verification'
+        description = 'Runs tests tagged smoke.'
+        testClassesDirs = sourceSets.test.output.classesDirs
+        classpath = sourceSets.test.runtimeClasspath
+        useJUnitPlatform {
+            includeTags 'smoke'
+        }
+    }
+}
+
+project(':ui-tests').tasks.withType(Test).configureEach {
+    mustRunAfter project(':api-tests').tasks.withType(Test)
+}
+
+allure {
+    version = '2.35.1'
+    report {
+        singleFile = true
+    }
+}
+
+configurations.allureAggregateReport.dependencies.clear()
+dependencies {
+    allureAggregateReport project(':api-tests')
+    allureAggregateReport project(':ui-tests')
+}
+
+tasks.register('apiTest') {
+    group = 'verification'
+    dependsOn ':api-tests:test'
+}
+
+tasks.register('uiTest') {
+    group = 'verification'
+    dependsOn ':ui-tests:test'
+}
+
+tasks.register('test') {
+    group = 'verification'
+    dependsOn 'apiTest', 'uiTest'
+}
+
+tasks.register('apiSmoke') {
+    group = 'verification'
+    dependsOn ':api-tests:smokeTest'
+}
+
+tasks.register('uiSmoke') {
+    group = 'verification'
+    dependsOn ':ui-tests:smokeTest'
+}
+
+tasks.register('smokeTest') {
+    group = 'verification'
+    dependsOn 'apiSmoke', 'uiSmoke'
+}
+
+tasks.named('check') {
+    dependsOn 'test'
+}
+
+tasks.register('allureArchive', Zip) {
+    group = 'reporting'
+    dependsOn tasks.named('allureAggregateReport')
+    from(layout.buildDirectory.dir('reports/allure-report/allureAggregateReport')) {
+        into 'allure-report'
+    }
+    archiveFileName = 'allure-report.zip'
+    destinationDirectory = layout.buildDirectory.dir('distributions')
+}
